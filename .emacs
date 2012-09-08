@@ -1,143 +1,78 @@
-(custom-set-variables
-  ;; custom-set-variables was added by Custom.
-  ;; If you edit it by hand, you could mess it up, so be careful.
-  ;; Your init file should contain only one such instance.
-  ;; If there is more than one, they won't work right.
- '(ecb-layout-name "left14")
- '(ecb-layout-window-sizes nil)
- '(ecb-options-version "2.40"))
-(custom-set-faces
-  ;; custom-set-faces was added by Custom.
-  ;; If you edit it by hand, you could mess it up, so be careful.
-  ;; Your init file should contain only one such instance.
-  ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "SystemWindow" :foreground "SystemWindowText" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 120 :width normal :foundry "outline" :family #("Osaka－等幅" 5 8 (charset cp932-2-byte)))))))
+;; slime
+(setq load-path (cons (expand-file-name "~/.emacs.d/slime") load-path))
 
-;; 拡張して使うelispファイルをライブラリパスに追加 
-(setq load-path 
-      (append 
-       (list 
-	;; 個別で入れるelispファイル用
-	(expand-file-name "~/elisp/"))
-			  load-path))
+;; Lisp用にSLIMEの設定
+;; lisp-mode
+(setq inferior-lisp-program "clisp")    ; clisp用
 
-;; Android-mode
-(require 'android-mode)
-(setq android-mode-sdk-dir "c:/android-sdk-windows")
+(require 'slime)
+(slime-setup)
+;; auto-install
+(add-to-list 'load-path "~/.emacs.d/auto-install")
+(require 'auto-install)
+(auto-install-update-emacswiki-package-name t)
+(auto-install-compatibility-setup)
+(setq ediff-window-setup-function 'ediff-setup-windows-plain)
 
 ;; elib
-(add-to-list 'load-path "~/.emacs.d/lisp/elib1.0")
+(add-to-list 'load-path "~/.emacs.d/elib1.0")
 
-;;;; ウインドウサイズの設定
+;; Emacsのカラーテーマ
+;; http://code.google.com/p/gnuemacscolorthemetest/
+(add-to-list 'load-path "~/.emacs.d/color-theme-6.6.0")
+(when (and (require 'color-theme nil t) (window-system))
+  (color-theme-initialize)
+  (color-theme-renegade))
+
+;; 背景を半透明にする
 (setq default-frame-alist
-      (append
-       '(
-	 (top . 45)      ; フレームの縦位置(ドット位置)
-	 (left . 45)   ; フレームの横位置(ドット位置)
-	 (width . 180)  ; フレーム幅(文字数)
-	 (height . 40)) ; フレーム高(文字数)
-       default-frame-alist))
+      (append (list
+               '(alpha . (90 85))
+               ) default-frame-alist))
 
-(setq initial-frame-alist default-frame-alist)
+;; ウィンドウサイズの設定
+;; 最大化する命令の定義
+(defvar w32-window-state nil)
+
+(defun w32-fullscreen-switch-frame ()
+  (interactive)
+  (setq w32-window-state (not w32-window-state))
+  (if w32-window-state
+      (w32-fullscreen-restore-frame)
+    (w32-fullscreen-maximize-frame)
+    ))
+  
+(defun w32-fullscreen-maximize-frame ()
+  "Maximize the current frame (windows only)"
+  (interactive)
+  (w32-send-sys-command 61488))
+
+(defun w32-fullscreen-restore-frame ()
+  "Restore a minimized/maximized frame (windows only)"
+  (interactive)
+  (w32-send-sys-command 61728))
+
+(add-hook 'window-setup-hook
+          '(lambda () (w32-fullscreen-maximize-frame))
+          )
+
+;; リドゥー設定
+;; redoできるようにする
+;; http://www.emacswiki.org/emacs/redo+.el
+(when (require 'redo+ nil t)
+  (define-key global-map (kbd "C-z") 'redo))
+
+;; auto-complete
+(add-to-list 'load-path "~/.emacs.d/")
+(require 'auto-complete-config)
+(global-auto-complete-mode t)
+(add-to-list 'ac-dictionary-directories "~/.emacs.d/ac-dict")
+(ac-config-default)
 
 ;; フォント設定 osakaの等倍
 (add-to-list 'default-frame-alist
              '(font . "-outline-Osaka－等幅-normal-normal-normal-mono-16-*-*-*-c-*-iso8859-1"))
-
-;; ECBをロードするための設定
-(add-to-list 'load-path "~/.emacs.d/ecb-2.40")
-(load-file "~/.emacs.d/cedet-1.0.1/common/cedet.el")
-(require 'ecb)
-
-(defun ecb-toggle ()
-    (interactive)
-      (if ecb-minor-mode
-                (ecb-deactivate)
-            (ecb-activate)))
-(global-set-key [f2] 'ecb-toggle)
-(put 'upcase-region 'disabled nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; C++のテンプレート作成用記述 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'autoinsert)
-
-;; テンプレートのディレクトリ
-(setq auto-insert-directory "~/.emacs.d/insert/")
-
-;; 各ファイルによってテンプレートを切り替える
-(setq auto-insert-alist
-      (nconc '(
-               ("\\.cpp$" . ["template.cpp" my-template])
-               ("\\.h$"   . ["template.h" my-template])
-	       ("Makefile$"   . ["Makefile" my-template])
-               ) auto-insert-alist))
-(require 'cl)
-(defvar template-replacements-alists
-  '(("%file%" . (lambda () (file-name-nondirectory (buffer-file-name))))
-    ("%file-without-ext%" . (lambda () 
-          (setq file-without-ext (file-name-sans-extension
-                                   (file-name-nondirectory (buffer-file-name))))))
-    ("%namespace%" .
-         (lambda () (setq namespace (read-from-minibuffer "namespace: "))))
-    ;; Makefile向けのテンプレート
-    ("%target%" . 
-     (lambda () (setq target (read-from-minibuffer "target name: "))))
-
-    ("%include%" .
-         (lambda () 
-           (cond ((string= namespace "") (concat "\"" file-without-ext ".h\""))
-                 (t (concat "<" (replace-regexp-in-string "::" "/" namespace) "/"
-                            file-without-ext ".h>")))))
-    ("%include-guard%" . 
-         (lambda ()
-           (format "%s_H_"
-                   (upcase (concat 
-                             (replace-regexp-in-string "::" "_" namespace)
-                             (unless (string= namespace "") "_")
-                             file-without-ext)))))
-    ("%name%" . user-full-name)
-    ("%mail%" . (lambda () (identity user-mail-address)))
-    ("%cyear%" . (lambda () (substring (current-time-string) -4)))
-    ("%bdesc%" . (lambda () (read-from-minibuffer "Brief description: ")))
-    ("%namespace-open%" .
-       (lambda ()
-         (cond ((string= namespace "") "")
-               (t (progn 
-                   (setq namespace-list (split-string namespace "::"))
-                   (setq namespace-text "")
-                   (while namespace-list
-                     (setq namespace-text (concat namespace-text "namespace "
-                                                 (car namespace-list) " {\n"))
-                     (setq namespace-list (cdr namespace-list))
-                   )
-                   (eval namespace-text))))))
-    ("%namespace-close%" .
-       (lambda ()
-         (cond ((string= namespace "") "")
-               (t (progn
-                   (setq namespace-list (reverse (split-string namespace "::")))
-                   (setq namespace-text "")
-                   (while namespace-list
-                      (setq namespace-text (concat namespace-text "} // " (car namespace-list) "\n"))
-                      (setq namespace-list (cdr namespace-list))
-                   )
-                   (eval namespace-text))))))
-))
-
-;; 雛形ファイル中のマクロを展開する定義
-(defun my-template ()
-  (time-stamp)
-  (mapc #'(lambda(c)
-            (progn
-              (goto-char (point-min))
-              (replace-string (car c) (funcall (cdr c)) nil)))
-        template-replacements-alists)
-  (goto-char (point-max))
-  (message "done."))
-
-(add-hook 'find-file-not-found-hooks 'auto-insert)
-
 ;; UTF-8でソースを書くための設定
-;; Setenv
 (setenv "LANG" "ja_JP.UTF-8")
 
 ;; 言語環境
@@ -168,18 +103,41 @@
 
 (setq grep-find-command "find . ! -name '*~' -type f -print0 | xargs -0 lgrep -n -Au8 -Ia ")
 
-;; auto-completeを使う設定
-(add-to-list 'load-path "~/.emacs.d/auto-complete-1.3.1")
-(load-file "~/.emacs.d/auto-complete-1.3.1/auto-complete.el")
-(require 'auto-complete)
-(global-auto-complete-mode t)
-(define-key ac-complete-mode-map "\C-n" 'ac-next)
-(define-key ac-complete-mode-map "\C-p" 'ac-previous)
+;; CEDET, ECB用の設定
+;; ECBをロードするための設定
+(add-to-list 'load-path "~/.emacs.d/ecb-2.40")
+(load-file "~/.emacs.d/cedet-1.0.1/common/cedet.el")
+(require 'ecb)
 
-;; yasnippetを使う設定
-(add-to-list 'load-path "~/.emacs.d/yasnippet")
-(load-file "~/.emacs.d/yasnippet/yasnippet.el")
-(load-file "~/.emacs.d/yasnippet/dropdown-list.el")
-(require 'yasnippet)
-(yas/initialize)
-(yas/load-directory "~/.emacs.d/yasnippet/snippets")
+;; C++モードでのコードスタイル設定
+(add-hook 'c++-mode-hook
+          '(lambda ()
+	     ; gnu, k&r, bsd, stroustrup, whitesmith, ellemtel, linuxなどがある
+	     ; 今までeclipseのコードフォーマットでK&Rを使っていたんで
+             (c-set-style "k&r")
+	     ;; センテンスの終了である ';' を入力したら、自動改行+インデント
+             (c-toggle-auto-hungry-state 1)
+	     ; ";"を打つと改行+インデント
+	     (Define-key c-mode-base-map "\C-m" 'newline-and-indent)
+             ))
+
+
+(defun ecb-toggle ()
+    (interactive)
+      (if ecb-minor-mode
+                (ecb-deactivate)
+            (ecb-activate)))
+(global-set-key [f2] 'ecb-toggle)
+(put 'upcase-region 'disabled nil)
+(custom-set-variables
+  ;; custom-set-variables was added by Custom.
+  ;; If you edit it by hand, you could mess it up, so be careful.
+  ;; Your init file should contain only one such instance.
+  ;; If there is more than one, they won't work right.
+ '(ecb-options-version "2.40"))
+(custom-set-faces
+  ;; custom-set-faces was added by Custom.
+  ;; If you edit it by hand, you could mess it up, so be careful.
+  ;; Your init file should contain only one such instance.
+  ;; If there is more than one, they won't work right.
+ )

@@ -1,40 +1,20 @@
 ;; より下に記述した物が PATH の先頭に追加されます
-;(dolist (dir (list
-;	      "/mingw/bin"
-;	      "/usr/bin"
-;	      "/usr/local/bin"
-;	      "/c/MinGW/msys-1.0.16/bin/"
-;	      "/c/Python27"
-;	      "/C/Program Files/Java/jdk1.6.0_25/bin"
-;	      "/usr/local/src/clisp-2.49/src"
-;             "~/.emacs.d/"
-;	      "."
-;              ))
-;; PATH と exec-path に同じ物を追加します
-;(setenv "PATH" (concat dir ":"))
-;;(when (and (file-exists-p dir) (not (member dir exec-path)))
-;;(setenv "PATH" (concat dir ":" (getenv "PATH")))
-;;  (setenv "PATH" (concat dir ":" dir))
-;;  (setq exec-path (append (list dir) exec-path))))
 (setenv "PATH"
   (concat
-   "C:\\Users\\learning\\AppData\\Roaming\\.emacs.d\\" ";"
-   "C:\\MinGW\\bin" ";"
-   "C:\\MinGW\\msys-1.0.16\\bin" ";"
+   "C:\\MinGW\\msys\\1.0\\home\\learning\\" ";"
+   "C:\\MinGW\\bin\\" ";"
+   "C:\\MinGW\\msys\\1.0\\bin\\" ";"
    "C:\\Python27\\" ";"
-   "C:\\MinGW\\msys-1.0.16\\local\\src\\clisp-2.49\\src" ";"
+   "C:\\clisp-2.49\\" ";"
    (getenv "PATH")))
-
 
 ;; slime
 (setq load-path (cons (expand-file-name "~/.emacs.d/slime") load-path))
 
 ;; Lisp用にSLIMEの設定
 ;; lisp-mode
-(setq inferior-lisp-program "clisp")    ; clisp用
-
+(setq inferior-lisp-program "C:/clisp-2.49/clisp.exe"); clisp用
 (require 'slime)
-(slime-setup)
 
 ;; requre 'clはこの辺でしとくべき？
 (require 'cl)
@@ -54,7 +34,7 @@
 (add-to-list 'load-path "~/.emacs.d/color-theme-6.6.0")
 (when (and (require 'color-theme nil t) (window-system))
   (color-theme-initialize)
-  (color-theme-renegade))
+  (color-theme-oswald))
 
 ;; 背景を半透明にする
 (setq default-frame-alist
@@ -94,12 +74,42 @@
 (when (require 'redo+ nil t)
   (define-key global-map (kbd "C-z") 'redo))
 
+;; 行数を表示させる
+(require 'linum)
+(global-linum-mode)
+
+;;;
+;;; Java編集
+;;;
+;; ajc-java-completeを使う
+;; 依存パッケージ: auto-complete, yasnippet
+;
+;; yasnippet
+;; https://github.com/capitaomorte/yasnippet.git
+(add-to-list 'load-path
+	     "~/.emacs.d/yasnippet")
+(require 'yasnippet)
+(yas-global-mode 1)
+
 ;; auto-complete
-(add-to-list 'load-path "~/.emacs.d/")
+(add-to-list 'load-path "~/.emacs.d/elisp")
 (require 'auto-complete-config)
-(global-auto-complete-mode t)
-(add-to-list 'ac-dictionary-directories "~/.emacs.d/ac-dict")
+(add-to-list 'ac-dictionary-directories "~/.emacs.d/elisp/ac-dict")
 (ac-config-default)
+(global-auto-complete-mode t)
+
+;; ajc-java-complete
+(add-to-list 'load-path "~/.emacs.d/ajc-java-complete")
+(require 'ajc-java-complete-config)
+(setq ajc-tag-file "~.java_base.tag")
+(add-hook 'java-mode-hook 'ajc-java-complete-mode)
+
+;;;
+;;; Perl編集
+;;;
+;; 
+(defalias 'perl-mode 'cperl-mode)
+(setq auto-mode-alist (cons '("\\.t$" . cperl-mode) auto-mode-alist))
 
 ;; ------------------------------------------------------------------------
 ;; @ hideshow/fold-dwim.el
@@ -136,14 +146,18 @@
 (set-buffer-file-coding-system 'utf-8)
 (set-default-coding-systems 'utf-8)
 
+;; バックアップを残さない
+(setq make-backup-files nil)
+
 ;; Shell Mode
 ;; MSYS の bash を使用します。
-(setq explicit-shell-file-name "c:/MinGW/msys-1.0.16/bin/bash.exe")
-(setq shell-file-name "c:/MinGW/msys-1.0.16/bin/sh.exe")
+(setq explicit-shell-file-name "c:/MinGW/msys/1.0/bin/bash.exe")
+(setq shell-file-name "c:/MinGW/msys/1.0/bin/sh.exe")
 ;; SHELL で ^M が付く場合は ^M を削除します。
 (add-hook 'shell-mode-hook
 	  (lambda ()
 	    (set-buffer-process-coding-system 'undecided-dos 'sjis-unix)))
+(add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
 ;; shell-mode での保管(for drive letter)
 (setq shell-file-name-chars "~/A-Za-z0-9_^$!#%&{}@`'.,:()-")
 
@@ -170,7 +184,9 @@
 (global-set-key [(control tab)]       'tabbar-forward)
 (tabbar-mode)
 
-;; C++モードでのコードスタイル設定
+;;
+;; C++編集
+;;
 (add-hook 'c++-mode-hook
           '(lambda ()
 	     ; gnu, k&r, bsd, stroustrup, whitesmith, ellemtel, linuxなどがある
@@ -247,8 +263,15 @@
              ;)
              ))
 
-;; バックアップを残さない
-(setq make-backup-files nil)
+;;; GDB 関連
+;;; 有用なバッファを開くモード
+(setq gdb-many-windows t)
+;;; 変数の上にマウスカーソルを置くと値を表示
+(add-hook 'gdb-mode-hook '(lambda () (gud-tooltip-mode t)))
+;;; I/O バッファを表示
+(setq gdb-use-separate-io-buffer t)
+;;; t にすると mini buffer に値が表示される
+(setq gud-tooltip-echo-area nil)
 
 ;; バッファをすべて閉じる関数
 (defun my-revert-buffer ()
@@ -266,6 +289,27 @@
 	    (buffer-file-name buf)) ;通常はvisitしているfileを削除
 	(kill-buffer buf))))
 
+;; 
+;;; This was installed by package-install.el.
+;;; This provides support for the package system and
+;;; interfacing with ELPA, the package archive.
+;;; Move this code earlier if you want to reference
+;;; packages in your .emacs.
+(when
+    (load
+     (expand-file-name "~/.emacs.d/elpa/package.el"))
+  (package-initialize))
+
+;; magit
+(require 'magit)
+(if (eq system-type 'windows-nt)
+    (setq magit-git-executable "C:/Program Files (x86)/Git/bin/git.exe"))
+
+;;
+(ecb-activate)
+(slime-setup)
+
+;; ecb-toggle
 (defun ecb-toggle ()
     (interactive)
       (if ecb-minor-mode
@@ -278,7 +322,6 @@
   ;; If you edit it by hand, you could mess it up, so be careful.
   ;; Your init file should contain only one such instance.
   ;; If there is more than one, they won't work right.
- '(ecb-layout-window-sizes (quote (("left8" (0.12340425531914893 . 0.2692307692307692) (0.12340425531914893 . 0.21153846153846154) (0.12340425531914893 . 0.2692307692307692) (0.12340425531914893 . 0.17307692307692307)))))
  '(ecb-options-version "2.40"))
 (custom-set-faces
   ;; custom-set-faces was added by Custom.

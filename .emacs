@@ -1,14 +1,18 @@
-;; Lisp用にSLIMEの設定
-;; lisp-mode
-(setq inferior-lisp-program "clisp"); clisp用
-(require 'slime)
-(slime-setup)
-
 ;; auto-install
 (require 'auto-install)
-(auto-install-update-emacswiki-package-name t)
 (auto-install-compatibility-setup)
 (add-to-list 'load-path "~/.emacs.d/auto-install")
+
+;; Add package-archives
+(require 'package)
+(add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/") t)
+(add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/"))
+;; Initialize
+(package-initialize)
+(when (< emacs-major-version 24)
+  ;; For important compatibility libraries like cl-lib
+  (add-to-list 'package-archives '("gnu" . "http://elpa.gnu.org/packages/")))
+(package-initialize)
 
 ;; Emacsのカラーテーマ
 ;; http://code.google.com/p/gnuemacscolorthemetest/
@@ -38,6 +42,9 @@
 (global-set-key [(control tab)]'tabbar-forward)
 (tabbar-mode)
 
+;; tabbar+
+(require 'tabbar+)
+
 ;; フォント設定 osakaの等倍
 (add-to-list 'default-frame-alist
              '(font . "-apple-Osaka－等幅-normal-normal-normal-*-16-*-*-*-d-0-iso10646-1"))
@@ -52,11 +59,17 @@
 (set-buffer-file-coding-system 'utf-8)
 (set-default-coding-systems 'utf-8)
 
+;; maxframe
+(require 'maxframe)
+(add-hook 'window-setup-hook 'maximize-frame t)
+
 ;; バックアップを残さない
 (setq make-backup-files nil)
 
 ;; auto-complete
+(add-to-list 'load-path "~/.emacs.d/elpa/auto-complete-20140824.1658")
 (require 'auto-complete-config)
+(add-to-list 'ac-dictionary-directories "~/.emacs.d/elpa/auto-complete-20140824.1658/ac-dict")
 (ac-config-default)
 (global-auto-complete-mode t)
 
@@ -64,9 +77,32 @@
 (require 'yasnippet)
 
 ;;;
+;;; Java編集
+;;;
+;; malabar-mode
+(require 'cedet)
+(when (require 'malabar-mode nil t)
+  (add-to-list 'auto-mode-alist '("\\.java$" . malabar-mode))
+  (setq malabar-groovy-lib-dir "~/.emacs.d/elpa/malabar-mode-20140307.1420")
+  ;; 日本語だとコンパイルエラーメッセージが化けるのでlanguageをenに設定
+  (setq malabar-groovy-java-options '("-Duser.language=en"))
+  ;; 普段使わないパッケージを import 候補から除外
+  (setq malabar-import-excluded-classes-regexp-list
+        (append 
+         '(
+           "^java\\.awt\\..*$"
+           "^com\\.sun\\..*$"
+           "^org\\.omg\\..*$"
+           ) malabar-import-excluded-classes-regexp-list))
+  (add-hook 'malabar-mode-hook
+            (lambda ()
+              (add-hook 'after-save-hook 'malabar-compile-file-silently
+                        nil t))))
+  
+
+;;;
 ;;; Scala編集
 ;;;
-;;
 (require 'scala-mode-auto)
 (add-to-list 'auto-mode-alist '("\\.scala$" . scala-mode))
 (add-to-list 'auto-mode-alist '("\\.sbt$" . scala-mode))
@@ -90,19 +126,26 @@
 
 ;; ensime
 (add-to-list 'load-path "~/.emacs.d/ensime/elisp/")
-    (require 'ensime)
-    (add-hook 'scala-mode-hook 'ensime-scala-mode-hook)
+   (require 'ensime)
+   (add-hook 'scala-mode-hook 'ensime-scala-mode-hook)
 
 ;;;
 ;;; Perl編集
 ;;;
-;; 
 (defalias 'perl-mode 'cperl-mode)
 (setq auto-mode-alist (cons '("\\.t$" . cperl-mode) auto-mode-alist))
+;; Perl デバッガの設定
+(autoload 'perl-debug "perl-debug" nil t)
+(autoload 'perl-debug-lint "perl-debug" nil t)
 
 ;;
 ;; C++編集
 ;;
+(add-to-list 'auto-mode-alist '("\\.h$" . c++-mode))
+(add-to-list 'auto-mode-alist '("\\.hpp$" . c++-mode))
+(add-to-list 'auto-mode-alist '("\\.cpp$" . c++-mode))
+(add-to-list 'auto-mode-alist '("\\.cc$" . c++-mode))
+(add-to-list 'auto-mode-alist '("\\.cxx$" . c++-mode))
 (add-hook 'c++-mode-hook
           '(lambda ()
 					; gnu, k&r, bsd, stroustrup, whitesmith, ellemtel, linuxなどがある
@@ -175,13 +218,12 @@
              (define-key c++-mode-base-map "\C-cg"      'gdb)
              (define-key c++-mode-base-map "\C-ct"      'toggle-source)
              ;; cc-modeに入る時に自動的にgtags-modeにする
-					;(gtags-mode t)
-					;)
-             ))
+	     (gtags-mode t)
+))
 
 ;;; GDB 関連
 ;;; 有用なバッファを開くモード
-(setq gdb-many-windows t)
+;;;(setq gdb-many-windows t)
 ;;; 変数の上にマウスカーソルを置くと値を表示
 (add-hook 'gdb-mode-hook '(lambda () (gud-tooltip-mode t)))
 ;;; I/O バッファを表示
@@ -195,12 +237,14 @@
 ;; bashdb
 (autoload 'bashdb "bashdb" "Run bashdb" t nil)
 
+;; my-kill-buffer
 (defun my-kill-buffer (all)
   (interactive "P") ;;”P” はprefix argumentを受け取る宣言のひとつ
   (dolist (buf (buffer-list))
     (if (or all ;; prefix argumentがあれば全バッファを削除
 	    (buffer-file-name buf)) ;通常はvisitしているfileを削除
 	(kill-buffer buf))))
+
 ;; anything
 (require 'anything)
 ;; gtags
@@ -225,19 +269,20 @@
 (setq default-file-name-coding-system 'utf-8)
 (setq svn-status-svn-file-coding-system 'utf-8)
 
-;; update GTAGS
-;; (defun update-gtags (&optional prefix)
-;;   (interactive "P")
-;;   (let ((rootdir (gtags-get-rootpath))
-;;         (args (if prefix "-v" "-iv")))
-;;     (when rootdir
-;;       (let* ((default-directory rootdir)
-;;              (buffer (get-buffer-create "*update GTAGS*")))
-;;         (save-excursion
-;;           (set-buffer buffer)
-;;           (erase-buffer)
-;;           (let ((result (process-file "gtags" nil buffer nil args)))
-;;             (if (= 0 result)
-;;                 (message "GTAGS successfully updated.")
-;;               (message "update GTAGS error with exit status %d" result))))))))
-;; (add-hook 'after-save-hook 'update-gtags)
+;; d-mode
+(add-to-list 'auto-mode-alist '("\\.d$" . d-mode))
+;; tramp
+(setq tramp-default-method "ssh")
+;; wandbox
+(require 'wandbox)
+;; w3m
+(autoload 'w3m "w3m"
+  "Interface for w3m on Emacs." t)
+
+;; ruby-mode
+(setq ruby-indent-level 3)
+(add-hook 'ruby-mode-hook
+          '(lambda ()
+             ;; ruby-modeの自前スタイル設定
+             (setq ruby-indent-level 3)
+))

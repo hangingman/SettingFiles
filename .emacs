@@ -1,3 +1,9 @@
+;; PATH
+(setenv "PATH"
+        (concat
+         "~/extlib/gems/bin:"
+         (getenv "PATH")))
+
 ;; auto-install
 (require 'auto-install)
 (auto-install-compatibility-setup)
@@ -15,11 +21,8 @@
 (package-initialize)
 
 ;; Emacsのカラーテーマ
-;; http://code.google.com/p/gnuemacscolorthemetest/
-(add-to-list 'load-path "~/.emacs.d/color-theme-6.6.0")
-(when (and (require 'color-theme nil t) (window-system))
- (color-theme-initialize)
- (color-theme-oswald))
+;; color
+(load-theme 'manoj-dark t)
 
 ;; リドゥー設定
 ;; redoできるようにする
@@ -67,7 +70,6 @@
 (setq make-backup-files nil)
 
 ;; auto-complete
-(add-to-list 'load-path "~/.emacs.d/elpa/auto-complete-20140824.1658")
 (require 'auto-complete-config)
 (add-to-list 'ac-dictionary-directories "~/.emacs.d/elpa/auto-complete-20140824.1658/ac-dict")
 (ac-config-default)
@@ -110,24 +112,25 @@
             '(lambda ()
                (yas/minor-mode-on)
 	       (c-set-style "k&r")
-	       ;; センテンスの終了である ';' を入力したら、自動改行+インデント
-	       (c-toggle-auto-hungry-state 1)
+ 	       (c-toggle-auto-hungry-state 1)
                ))
-
-;; Scalaはコンパイルの時に色指定が入る
-(require 'ansi-color)
-(add-hook 'compilation-mode-hook 'ansi-color-for-comint-mode-on)
-(add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
-(defun colorize-compilation-buffer ()
-  (toggle-read-only)
-  (ansi-color-apply-on-region (point-min) (point-max))
-  (toggle-read-only))
-(add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
 
 ;; ensime
 (add-to-list 'load-path "~/.emacs.d/ensime/elisp/")
    (require 'ensime)
    (add-hook 'scala-mode-hook 'ensime-scala-mode-hook)
+
+;; Scalaはコンパイルの時に色指定が入る
+(require 'ansi-color)
+(add-hook 'compilation-mode-hook 'ansi-color-for-comint-mode-on)                     
+(add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)                           
+(add-hook 'shell-mode-hook 'sbt-mode)                                                
+(add-hook 'compilation-filter-hook                                                   
+          '(lambda ()                                                                
+             (let ((start-marker (make-marker))                                      
+                   (end-marker (process-mark (get-buffer-process (current-buffer)))))
+               (set-marker start-marker (point-min))                                 
+               (ansi-color-apply-on-region start-marker end-marker))))
 
 ;;;
 ;;; Perl編集
@@ -223,7 +226,7 @@
 
 ;;; GDB 関連
 ;;; 有用なバッファを開くモード
-;;;(setq gdb-many-windows t)
+(setq gdb-many-windows t)
 ;;; 変数の上にマウスカーソルを置くと値を表示
 (add-hook 'gdb-mode-hook '(lambda () (gud-tooltip-mode t)))
 ;;; I/O バッファを表示
@@ -245,8 +248,6 @@
 	    (buffer-file-name buf)) ;通常はvisitしているfileを削除
 	(kill-buffer buf))))
 
-;; anything
-(require 'anything)
 ;; gtags
 (setq gtags-prefix-key "\C-c")
 (require 'gtags)
@@ -273,8 +274,6 @@
 (add-to-list 'auto-mode-alist '("\\.d$" . d-mode))
 ;; tramp
 (setq tramp-default-method "ssh")
-;; wandbox
-(require 'wandbox)
 ;; w3m
 (autoload 'w3m "w3m"
   "Interface for w3m on Emacs." t)
@@ -286,3 +285,16 @@
              ;; ruby-modeの自前スタイル設定
              (setq ruby-indent-level 3)
 ))
+
+;; php-mode
+(require 'php-mode)
+;; mmm-mode
+(require 'mmm-mode)
+(setq mmm-global-mode 'maybe)
+(mmm-add-mode-ext-class nil "\\.php?\\'" 'html-php)
+(mmm-add-classes
+'((html-php
+:submode php-mode
+:front "<\\?\\(php\\)?"
+:back "\\?>")))
+(add-to-list 'auto-mode-alist '("\\.php?\\'" . xml-mode))

@@ -1,28 +1,51 @@
+;;
+;; For GUI Emacs 24.3.1
+;;
+
 ;; PATH
 (setenv "PATH"
         (concat
          "~/extlib/gems/bin:"
          (getenv "PATH")))
 
+;; cedet
+(load "~/.emacs.d/cedet/cedet-devel-load.el")
+
 ;; auto-install
 (require 'auto-install)
 (auto-install-compatibility-setup)
 (add-to-list 'load-path "~/.emacs.d/auto-install")
 
+;;ツールバー不要
+(tool-bar-mode -1)
+
+;; 対応するカッコを強調表示
+(show-paren-mode t)
+
+;; 矩形範囲選択
+(cua-selection-mode t)
+(setq cua-enable-cua-keys nil) ; デフォルトキーバインドを無効化
+
+;; trailing-whitespace
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
+
+;; anzu
+(require 'anzu)
+
 ;; Add package-archives
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/") t)
 (add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/"))
-;; Initialize
 (package-initialize)
-(when (< emacs-major-version 24)
-  ;; For important compatibility libraries like cl-lib
-  (add-to-list 'package-archives '("gnu" . "http://elpa.gnu.org/packages/")))
-(package-initialize)
+
+(unless (package-installed-p 'scala-mode2)
+(package-refresh-contents) (package-install 'scala-mode2))
+(unless (package-installed-p 'ensime)
+(package-refresh-contents) (package-install 'ensime))
 
 ;; Emacsのカラーテーマ
 ;; color
-(load-theme 'manoj-dark t)
+(load-theme 'deeper-blue t)
 
 ;; リドゥー設定
 ;; redoできるようにする
@@ -34,15 +57,16 @@
 (require 'linum)
 (global-linum-mode)
 
-;; 矩形範囲選択
-(cua-mode t)
-(setq cua-enable-cua-keys nil)
+;; s.el
+(require 's)
 
 ;; タブを使う
 ;; http://www.emacswiki.org/emacs/tabbar.el
 (require 'tabbar)
-(global-set-key [(backtab)]'tabbar-backward)
-(global-set-key [(control tab)]'tabbar-forward)
+(global-set-key "\M-b" 'tabbar-backward-tab)
+(global-set-key "\M-t" 'tabbar-forward-tab)
+;(global-set-key [(backtab)]'tabbar-backward)
+;(global-set-key [(control tab)]'tabbar-forward)
 (tabbar-mode)
 
 ;; tabbar+
@@ -55,12 +79,7 @@
 (setenv "LANG" "ja_JP.UTF-8")
 
 ;; 文字コード
-(set-language-environment "japanese")
-(prefer-coding-system 'utf-8)
-(set-terminal-coding-system 'utf-8)
-(set-keyboard-coding-system 'utf-8)
-(set-buffer-file-coding-system 'utf-8)
-(set-default-coding-systems 'utf-8)
+(prefer-coding-system 'utf-8-unix)
 
 ;; maxframe
 (require 'maxframe)
@@ -81,26 +100,6 @@
 ;;;
 ;;; Java編集
 ;;;
-;; malabar-mode
-(require 'cedet)
-(when (require 'malabar-mode nil t)
-  (add-to-list 'auto-mode-alist '("\\.java$" . malabar-mode))
-  (setq malabar-groovy-lib-dir "~/.emacs.d/elpa/malabar-mode-20140307.1420")
-  ;; 日本語だとコンパイルエラーメッセージが化けるのでlanguageをenに設定
-  (setq malabar-groovy-java-options '("-Duser.language=en"))
-  ;; 普段使わないパッケージを import 候補から除外
-  (setq malabar-import-excluded-classes-regexp-list
-        (append 
-         '(
-           "^java\\.awt\\..*$"
-           "^com\\.sun\\..*$"
-           "^org\\.omg\\..*$"
-           ) malabar-import-excluded-classes-regexp-list))
-  (add-hook 'malabar-mode-hook
-            (lambda ()
-              (add-hook 'after-save-hook 'malabar-compile-file-silently
-                        nil t))))
-  
 
 ;;;
 ;;; Scala編集
@@ -116,21 +115,9 @@
                ))
 
 ;; ensime
-(add-to-list 'load-path "~/.emacs.d/ensime/elisp/")
-   (require 'ensime)
-   (add-hook 'scala-mode-hook 'ensime-scala-mode-hook)
-
-;; Scalaはコンパイルの時に色指定が入る
-(require 'ansi-color)
-(add-hook 'compilation-mode-hook 'ansi-color-for-comint-mode-on)                     
-(add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)                           
-(add-hook 'shell-mode-hook 'sbt-mode)                                                
-(add-hook 'compilation-filter-hook                                                   
-          '(lambda ()                                                                
-             (let ((start-marker (make-marker))                                      
-                   (end-marker (process-mark (get-buffer-process (current-buffer)))))
-               (set-marker start-marker (point-min))                                 
-               (ansi-color-apply-on-region start-marker end-marker))))
+(require 'scala-mode2)
+(require 'ensime)
+(add-hook 'scala-mode-hook 'ensime-scala-mode-hook)
 
 ;;;
 ;;; Perl編集
@@ -220,22 +207,22 @@
              (define-key c++-mode-base-map "\C-c\M-c"   'compilation-close)
              (define-key c++-mode-base-map "\C-cg"      'gdb)
              (define-key c++-mode-base-map "\C-ct"      'toggle-source)
-             ;; cc-modeに入る時に自動的にgtags-modeにする
-	     (gtags-mode t)
+             ;; cc-modeに入る時に自動的にetags-modeにする
+	     (etags-mode t)
 ))
 
 ;;; GDB 関連
 ;;; 有用なバッファを開くモード
-(setq gdb-many-windows t)
+;;;(setq gdb-many-windows t)
 ;;; 変数の上にマウスカーソルを置くと値を表示
-(add-hook 'gdb-mode-hook '(lambda () (gud-tooltip-mode t)))
+;;;(add-hook 'gdb-mode-hook '(lambda () (gud-tooltip-mode t)))
 ;;; I/O バッファを表示
-(setq gdb-use-separate-io-buffer t)
+;;;(setq gdb-use-separate-io-buffer t)
 ;;; t にすると mini buffer に値が表示される
-(setq gud-tooltip-echo-area nil)
+;;;(setq gud-tooltip-echo-area nil)
 
 ;;; magit
-(require 'magit) 
+(require 'magit)
 
 ;; bashdb
 (autoload 'bashdb "bashdb" "Run bashdb" t nil)
@@ -248,22 +235,6 @@
 	    (buffer-file-name buf)) ;通常はvisitしているfileを削除
 	(kill-buffer buf))))
 
-;; gtags
-(setq gtags-prefix-key "\C-c")
-(require 'gtags)
-(require 'anything-gtags)
-;; キーバインド
-(setq gtags-mode-hook
-      '(lambda ()
-         (define-key gtags-mode-map "\C-cs" 'gtags-find-symbol)
-         (define-key gtags-mode-map "\C-cr" 'gtags-find-rtag)
-         (define-key gtags-mode-map "\C-ct" 'gtags-find-tag)
-         (define-key gtags-mode-map "\C-cf" 'gtags-parse-file)))
-;; gtags-mode を使いたい mode の hook に追加する
-(add-hook 'c-mode-common-hook
-          '(lambda()
-             (gtags-mode 1)))
-
 ;; Subversion操作
 (require 'psvn)
 (setq process-coding-system-alist '(("svn" . utf-8)))
@@ -272,6 +243,9 @@
 
 ;; d-mode
 (add-to-list 'auto-mode-alist '("\\.d$" . d-mode))
+;; mark-down-mode
+(add-to-list 'auto-mode-alist '("\\.md$" . markdown-mode))
+
 ;; tramp
 (setq tramp-default-method "ssh")
 ;; w3m
@@ -298,3 +272,29 @@
 :front "<\\?\\(php\\)?"
 :back "\\?>")))
 (add-to-list 'auto-mode-alist '("\\.php?\\'" . xml-mode))
+
+;; Haskell
+(unless (package-installed-p 'haskell-mode)
+(package-refresh-contents) (package-install 'haskell-mode))
+
+(autoload 'haskell-mode "haskell-mode" nil t)
+(autoload 'haskell-cabal "haskell-cabal" nil t)
+
+(add-to-list 'auto-mode-alist '("\\.hs$" . haskell-mode))
+(add-to-list 'auto-mode-alist '("\\.lhs$" . literate-haskell-mode))
+(add-to-list 'auto-mode-alist '("\\.cabal\\'" . haskell-cabal-mode))
+
+(add-hook 'haskell-mode-hook 'turn-on-haskell-indentation)
+(add-hook 'haskell-mode-hook 'turn-on-haskell-doc-mode)
+(add-hook 'haskell-mode-hook 'font-lock-mode)
+(add-hook 'haskell-mode-hook 'imenu-add-menubar-index)
+
+(setq haskell-program-name "/usr/bin/ghci")
+
+(unless (package-installed-p 'ac-haskell-process)
+(package-refresh-contents) (package-install 'ac-haskell-process))
+(require 'ac-haskell-process) ; if not installed via package.el
+(add-hook 'interactive-haskell-mode-hook 'ac-haskell-process-setup)
+(add-hook 'haskell-interactive-mode-hook 'ac-haskell-process-setup)
+(eval-after-load "auto-complete"
+  '(add-to-list 'ac-modes 'haskell-interactive-mode))

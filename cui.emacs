@@ -1,3 +1,7 @@
+;;
+;; For GUI Emacs 24.3.1
+;;
+
 ;; UTF-8でソースを書くための設定
 (setenv "LANG" "ja_JP.UTF-8")
 
@@ -65,7 +69,7 @@
 (require 'magit)
 
 ;; color
-(load-theme 'deeper-blue t)
+(load-theme 'adwaita t)
 
 ;; auto-complete
 (require 'auto-complete-config)
@@ -165,22 +169,3 @@
 (require 'yaml-mode)
 (add-to-list 'auto-mode-alist '("\\.ya?ml$" . yaml-mode))
 (define-key yaml-mode-map "\C-m" 'newline-and-indent)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

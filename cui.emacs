@@ -12,6 +12,9 @@
 ;; バックアップを残さない
 (setq make-backup-files nil)
 
+;; 行末の空白削除
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
+
 ;; tramp as sudo
 (set-default 'tramp-default-proxies-alist (quote ((".*" "\\`root\\'" "/ssh:%h:"))))
 
@@ -26,12 +29,15 @@
 (add-hook 'auto-revert-tail-mode 'ansi-color-for-comint-mode-on)
 (add-to-list 'auto-mode-alist '("\\.log\\'" . display-ansi-colors))
 
+;; cedet <-- force to install devel
+(load "~/.emacs.d/cedet/cedet-devel-load.el")
+
 ;; package.el
 (require 'package)
 ;; MELPAを追加
 (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/"))
 ;; Marmaladeを追加
-(add-to-list 'package-archives  '("marmalade" . "http://marmalade-repo.org/packages/"))
+;;(add-to-list 'package-archives  '("marmalade" . "http://marmalade-repo.org/packages/"))
 ;; 初期化
 (package-initialize)
 
@@ -43,8 +49,8 @@
 (tabbar-mode)
 
 ;; 行数を表示させる
-(require 'linum)
-(global-linum-mode)
+(require 'nlinum)
+(global-nlinum-mode)
 
 ;; 矩形範囲選択
 (cua-mode t)
@@ -55,7 +61,7 @@
 (add-to-list 'load-path "~/.emacs.d/magit")
 (eval-after-load 'info
   '(progn (info-initialize)
-	  (add-to-list 'Info-directory-list "~/.emacs.d/magit/")))
+          (add-to-list 'Info-directory-list "~/.emacs.d/magit/")))
 (require 'magit)
 
 ;; color
@@ -68,7 +74,7 @@
 ;; anzu
 (global-anzu-mode +1)
 (set-face-attribute 'anzu-mode-line nil
-		    :foreground "red" :weight 'bold)
+                    :foreground "red" :weight 'bold)
 
 (custom-set-variables
  '(anzu-mode-lighter "")
@@ -80,23 +86,13 @@
 (require 'dash)
 (require 'scala-mode2)
 (add-to-list 'auto-mode-alist '("\\.scala$" . scala-mode))
-(unless (package-installed-p 'ensime)
-(package-refresh-contents) (package-install 'ensime))
-(add-hook 'scala-mode-hook 'ensime-scala-mode-hook)
-
-;; cedet
-(unless (package-installed-p 'cedet)
-(package-refresh-contents) (package-install 'cedet))
-
-;; python-mode
-(require 'python-mode)
-(setq auto-mode-alist (cons '("\\.py$" . python-mode) auto-mode-alist))
-(setq interpreter-mode-alist (cons '("python" . python-mode) interpreter-mode-alist))
-(autoload 'python-mode "python-mode" "Python editing mode." t)
-;; flymake for python
-(add-hook 'python-mode-hook 'flymake-find-file-hook)
+(add-to-list 'load-path "~/.emacs.d/ensime-emacs/")
+;(load "~/.emacs.d/ensime-emacs/ensime.el")
+(require 'ensime)
 
 ;; markdown
+(unless (package-installed-p 'markdown-mode)
+  (package-refresh-contents) (package-install 'markdown-mode))
 (autoload 'markdown-mode "markdown-mode.el" "Major mode for editing Markdown files" t)
 (setq auto-mode-alist (cons '("\\.md$" . markdown-mode) auto-mode-alist))
 
@@ -152,3 +148,39 @@
     :front "<\\?\\(php\\)?"
     :back "\\?>")))
 (add-to-list 'auto-mode-alist '("\\.php?\\'" . xml-mode))
+
+;; coffee-mode
+(unless (package-installed-p 'coffee-mode)
+  (package-refresh-contents) (package-install 'coffee-mode))
+(add-to-list 'auto-mode-alist '("\\.coffee?\\'" . coffee-mode))
+
+;; slim
+(unless (package-installed-p 'slim-mode)
+  (package-refresh-contents) (package-install 'slim-mode))
+(add-to-list 'auto-mode-alist '("\\.slim?\\'" . slim-mode))
+
+;; yaml
+(unless (package-installed-p 'yaml-mode)
+  (package-refresh-contents) (package-install 'yaml-mode))
+(require 'yaml-mode)
+(add-to-list 'auto-mode-alist '("\\.ya?ml$" . yaml-mode))
+(define-key yaml-mode-map "\C-m" 'newline-and-indent)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

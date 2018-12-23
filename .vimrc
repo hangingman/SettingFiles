@@ -12,3 +12,4 @@ set title
 set ruler
 set shiftwidth=4
 set autoindent
+set term=xterm-256color

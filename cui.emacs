@@ -1,5 +1,6 @@
 ;;
 ;; Tested on Emacs 24.5.1 on Debian/Linux on WSL
+;;           Emacs 24.3.1 on Centos7
 ;;
 
 ;; UTF-8でソースを書くための設定
@@ -36,11 +37,9 @@
 ;; package.el
 (require 'package)
 ;; MELPAを追加
-(add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/"))
-
-;; Marmaladeを追加
-;;(add-to-list 'package-archives  '("marmalade" . "http://marmalade-repo.org/packages/"))
-;; 初期化
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+;; MELPA-stableを追加
+(add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
 (package-initialize)
 
 ;; タブを使う
@@ -64,13 +63,13 @@
 (define-key global-map (kbd "C-x SPC") 'cua-set-rectangle-mark)
 
 ;; magit
-(unless (package-installed-p 'magit)
-  (package-refresh-contents) (package-install 'magit))
-(add-to-list 'load-path "~/.emacs.d/magit")
-(eval-after-load 'info
-  '(progn (info-initialize)
-	  (add-to-list 'Info-directory-list "~/.emacs.d/magit/")))
-(require 'magit)
+;; (unless (package-installed-p 'magit)
+;;   (package-refresh-contents) (package-install 'magit))
+;; (add-to-list 'load-path "~/.emacs.d/magit")
+;; (eval-after-load 'info
+;;   '(progn (info-initialize)
+;; 	    (add-to-list 'Info-directory-list "~/.emacs.d/magit/")))
+;; (require 'magit)
 
 ;; color
 (load-theme 'adwaita t)
@@ -84,7 +83,7 @@
   (package-refresh-contents) (package-install 'anzu))
 (global-anzu-mode +1)
 (set-face-attribute 'anzu-mode-line nil
-		    :foreground "red" :weight 'bold)
+		        :foreground "red" :weight 'bold)
 
 (custom-set-variables
  '(anzu-mode-lighter "")
@@ -97,7 +96,7 @@
 ;; (require 'scala-mode2)
 ;; (add-to-list 'auto-mode-alist '("\\.scala$" . scala-mode))
 ;; (add-to-list 'load-path "~/.emacs.d/ensime-emacs/")
-;; 					;(load "~/.emacs.d/ensime-emacs/ensime.el")
+;; ;(load "~/.emacs.d/ensime-emacs/ensime.el")
 ;; (require 'ensime)
 
 ;; markdown
